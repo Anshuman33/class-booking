@@ -20,6 +20,12 @@ else:
     dump(bookings,"bookings.json")
     
 
+
+def sendMail(student_email, student_name, date, start_time, end_time):
+    msg = Message('Class Booked Successfully', sender=teacher['email'], recipients=[student_email])
+    msg.body = f"Student Name: {student_name}\nClass Date: {date}\nStart Time: {start_time}\nEnd Time: {end_time}"
+    mail.send(msg)
+
 def checkAvailability(day, req_start_time, req_end_time):
     print("Hello")
 
@@ -46,21 +52,28 @@ def slotsCompatible(slot1, slot2):
         return True
     else :
         return False
-    
-    
 
-def sendMail(student_email, student_name, date, start_time, end_time):
-    msg = Message('Class Booked Successfully', sender='test@gmail.com', recipients=[student_email])
-    msg.body = f"Student Name: {student_name}\nClass Date: {date}\nStart Time: {start_time}\nEnd Time: {end_time}"
-    mail.send(msg)
-
+    
 def findSchedule(date, start_time, end_time):
-    if date in bookings:
+    '''
+        Finds the next available slot and returns the booking details
+        returns a dictionary with date, weekday, start_time, and end_time of the booked slot
+    '''
+    if date not in bookings:
+        bookings[date] = []
+        bookings[date].append([start_time, end_time])
+        
+        return {"weekday":weekdays[date.isoweekday()],
+                "date":date.strftime(date, "%d %M %Y"), 
+                "start_time":date.strftime(start_time, "%I %p"), "end_time":date.strftime(end_time, "%I %p")
+                }
+    else:
         for record in bookings['date']:
             if not slotsCompatible(record, [start_time,end_time]):
+                # Find slot next week
                 date = date + timedelta(weeks=1)
                 return findSchedule(date)
-    # To complete
+        # To complete
     
 @app.route("/schedule", methods=['POST'])
 def schedule():
