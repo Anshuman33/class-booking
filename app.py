@@ -77,7 +77,6 @@ def findSchedule(date, start_time, end_time):
     
 @app.route("/schedule", methods=['POST'])
 def schedule():
-    response = {}
     student_name = request.form.get("full_name")
     email = request.form.get("email_address")
     weekday = request.form.get("weekday")
@@ -96,8 +95,14 @@ def schedule():
     while(weekdays[currDate.isoweekday()] != weekday):
         currDate = currDate + timedelta(days=1)
     
+    # Convert start time and endtime to datetime
+    start_time = datetime.strptime(start_time, "%I %p")
+    end_time = datetime.strptime(start_time, "%I %p")
+    
     # Find suitable schedule
     booked_slot = findSchedule(currDate, start_time, end_time)
+    
+    # Send mail
     sendMail(email, student_name, booked_slot['date'], booked_slot['start_time'], booked_slot['end_time'])
     
         
