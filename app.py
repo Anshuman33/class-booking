@@ -1,16 +1,24 @@
 from flask import Flask, request, jsonify
-from json import load
+from json import load, dump
+from flask_mail import Mail, Message
 from datetime import datetime, date, timedelta
+import os
 
 weekdays = {1:'monday',2:'tuesday',3:'wednesday',4:'thursday',5:'friday',6:'saturday', 7:'sunday'}
 
 app = Flask(__name__)
+mail = Mail(app)
 
 with open("teacher_availability.json") as f:
     teacher = load(f)
     
-bookings = {}
-print(teacher)
+if os.path.exists("bookings.json"):
+    with open("bookings.json") as f:
+        bookings = load(f)
+else:
+    bookings = {}
+    dump(bookings,"bookings.json")
+    
 
 def checkAvailability(day, req_start_time, req_end_time):
     print("Hello")
@@ -38,6 +46,13 @@ def slotsCompatible(slot1, slot2):
         return True
     else :
         return False
+    
+    
+
+def sendMail(student_email, student_name, date, start_time, end_time):
+    msg = Message('Class Booked Successfully', sender='test@gmail.com', recipients=[student_email])
+    msg.body = f"Student Name: {student_name}\nClass Date: {date}\nStart Time: {start_time}\nEnd Time: {end_time}"
+    mail.send(msg)
 
 def findSchedule(date, start_time, end_time):
     if date in bookings:
@@ -45,6 +60,8 @@ def findSchedule(date, start_time, end_time):
             if not slotsCompatible(record, [start_time,end_time]):
                 date = date + timedelta(weeks=1)
                 return findSchedule(date)
+    # To complete
+    
 @app.route("/schedule", methods=['POST'])
 def schedule():
     response = {}
@@ -66,7 +83,9 @@ def schedule():
     while(weekdays[currDate.isoweekday()] != weekday):
         currDate = currDate + timedelta(days=1)
     
+    # Find suitable schedule
     booked_slot = findSchedule(currDate, start_time, end_time)
+    sendMail(email, student_name, booked_slot['date'], booked_slot['start_time'], booked_slot['end_time'])
     
         
     return jsonify(
@@ -78,14 +97,6 @@ def schedule():
                 "date": booked_slot['date']
             }
         ), 200
-    
-    
-    
-    
-    
-
-        
-        
     
         
 if __name__ == '__main__':
